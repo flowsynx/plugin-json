@@ -1,4 +1,4 @@
-# FlowSynx JSON Plugin
+## FlowSynx JSON Plugin
 
 The **FlowSynx JSON Plugin** is a built-in, plug-and-play integration for the FlowSynx automation engine. It enables parsing, transforming, extracting, and mapping structured or semi-structured JSON data within workflows with no custom coding required.
 
