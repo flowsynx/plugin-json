@@ -11,9 +11,10 @@ This plugin is automatically installed by the FlowSynx engine when selected in t
 The JSON Plugin allows FlowSynx users to:
 
 - Parse and inspect complex JSON structures.
-- Extract values using JSONPath.
+- Extract values using JSONPath-like expressions.
 - Flatten nested objects.
 - Map JSON data to specific output fields using flexible rules.
+- Format the output with indentation for readability.
 
 It integrates seamlessly into FlowSynx no-code/low-code workflows.
 
@@ -21,33 +22,38 @@ It integrates seamlessly into FlowSynx no-code/low-code workflows.
 
 ## Supported Operations
 
-- **extract**: Extracts a specific value using a `jsonPath` expression.
+- **extract**: Extracts a specific value using a `Path` expression.
 - **transform**: Flattens a nested JSON structure into flat `key: value` pairs.
-- **map**: Maps fields to new keys using a dictionary of JSONPath expressions.
+- **map**: Maps fields to new keys using a dictionary of `Path` expressions.
+
+Operation names are case-insensitive and passed as part of the `InputParameter`.
 
 ---
 
 ## Input Parameters
 
-Below are the parameters accepted by the plugin:
+The plugin accepts the following parameters:
 
 - `Operation` (string): Required. The type of operation to perform. Supported values are `extract`, `transform`, and `map`.
-- `Json` (string): Required. The raw JSON string to process.
-- `jsonPath` (string): Required for `extract` operation. A JSONPath expression to locate a specific value.
-- `Mappings` (dictionary): Required for `map` operation. A dictionary where each key is an output field and each value is a JSONPath expression.
+- `Data` (object): Required. The JSON object (or raw JSON string) to process.
+- `Path` (string): Required for `extract` operation. A JSONPath-like expression to locate a specific value.
+- `Mappings` (dictionary): Required for `map` operation. A dictionary where each key is an output field and each value is a `Path` expression.
 - `Flatten` (bool): Optional. Used with `transform` to specify whether to flatten nested objects (`true`) or not (`false`).
+- `Indented` (bool): Optional. Determines whether the output JSON should be pretty-printed with indentation (`true`) or compact (`false`).
 
-Example input:
+### Example input
+
 ```json
 {
   "Operation": "map",
-  "Json": "{...}",
-  "jsonPath": "$.some.path",
+  "Data": { ... },
+  "Path": "$.some.path",
   "Mappings": {
     "Name": "$.person.name",
     "Email": "$.person.contact.email"
   },
-  "Flatten": true
+  "Flatten": true,
+  "Indented": true
 }
 ```
 
@@ -57,7 +63,7 @@ Example input:
 
 ### extract Operation
 
-**Input JSON:**
+**Input JSON Object:**
 ```json
 {
   "meta": {
@@ -71,8 +77,8 @@ Example input:
 ```json
 {
   "Operation": "extract",
-  "Json": "{...}",
-  "jsonPath": "$.meta.version"
+  "Data": { ... },
+  "Path": "$.meta.version"
 }
 ```
 
@@ -83,9 +89,38 @@ Example input:
 
 ---
 
+**Input JSON Array:**
+```json
+[
+  { "id": 1 },
+  { "id": 2 },
+  { "id": 3 }
+]
+```
+
+**Input Parameters:**
+```json
+{
+  "Operation": "extract",
+  "Data": "[...]",
+  "Path": "$[*].id"
+}
+```
+
+**Output:**
+```json
+[
+    1,
+    2,
+    3
+]
+```
+
+---
+
 ### transform Operation
 
-**Input JSON:**
+**Input Data:**
 ```json
 {
   "user": {
@@ -101,8 +136,9 @@ Example input:
 ```json
 {
   "Operation": "transform",
-  "Json": "{...}",
-  "Flatten": true
+  "Data": { ... },
+  "Flatten": true,
+  "Indented": true
 }
 ```
 
@@ -118,7 +154,7 @@ Example input:
 
 ### map Operation
 
-**Input JSON:**
+**Input Data:**
 ```json
 {
   "person": {
@@ -134,11 +170,12 @@ Example input:
 ```json
 {
   "Operation": "map",
-  "Json": "{...}",
+  "Data": { ... },
   "Mappings": {
     "Name": "$.person.name",
     "Email": "$.person.contact.email"
-  }
+  },
+  "Indented": false
 }
 ```
 
@@ -156,17 +193,17 @@ Example input:
 
 1. Add the JSON plugin to your FlowSynx workflow.
 2. Set `Operation` to one of: `extract`, `transform`, or `map`.
-3. Provide the JSON input string.
-4. Configure `jsonPath`, `Mappings`, or `Flatten` depending on the operation.
-5. Use the output downstream in your workflow.
+3. Provide the JSON input object in `Data`.
+4. Configure `Path`, `Mappings`, `Flatten`, and `Indented` depending on the operation.
+5. Use the plugin output downstream in your workflow.
 
 ---
 
 ## Debugging Tips
 
-- If the result is null, ensure `jsonPath` is valid and points to an existing element.
-- If nothing is mapped, check for typos in the JSONPath expressions inside `Mappings`.
-- If the result isn't flattened, double-check that `Flatten` is set to `true`.
+- If the result is null, ensure `Path` is valid and points to an existing element.
+- If nothing is mapped, check for typos in the `Path` expressions inside `Mappings`.
+- To get human-readable output, set `Indented` to `true`.
 
 ---
 
