@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\FlowSynx.Plugins.Json.csproj" />
+    <ProjectReference Include="..\src\FlowSynx.Plugins.Json.csproj" />
   </ItemGroup>
 
   <ItemGroup>

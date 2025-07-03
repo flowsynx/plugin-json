@@ -9,7 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{DEC33F76-6AA
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{48C12015-81A9-44DD-94A9-9E7A5D12305D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlowSynx.Plugin.Json.UnitTests", "tests\FlowSynx.Plugin.Json.UnitTests\FlowSynx.Plugin.Json.UnitTests.csproj", "{F986079F-4C54-4BDC-AD63-9CFF25834DDC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlowSynx.Plugin.Json.UnitTests", "tests\FlowSynx.Plugin.Json.UnitTests.csproj", "{F986079F-4C54-4BDC-AD63-9CFF25834DDC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
