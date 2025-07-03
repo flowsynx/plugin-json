@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlowSynx.Plugins.Json", "sr
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{DEC33F76-6AA7-41D1-9ADE-C5CFC3B1185C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{48C12015-81A9-44DD-94A9-9E7A5D12305D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlowSynx.Plugin.Json.UnitTests", "tests\FlowSynx.Plugin.Json.UnitTests\FlowSynx.Plugin.Json.UnitTests.csproj", "{F986079F-4C54-4BDC-AD63-9CFF25834DDC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,11 +21,16 @@ Global
 		{46F69BA2-2760-4A30-A813-FDDEE427C068}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{46F69BA2-2760-4A30-A813-FDDEE427C068}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{46F69BA2-2760-4A30-A813-FDDEE427C068}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F986079F-4C54-4BDC-AD63-9CFF25834DDC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F986079F-4C54-4BDC-AD63-9CFF25834DDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F986079F-4C54-4BDC-AD63-9CFF25834DDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F986079F-4C54-4BDC-AD63-9CFF25834DDC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{46F69BA2-2760-4A30-A813-FDDEE427C068} = {DEC33F76-6AA7-41D1-9ADE-C5CFC3B1185C}
+		{F986079F-4C54-4BDC-AD63-9CFF25834DDC} = {48C12015-81A9-44DD-94A9-9E7A5D12305D}
 	EndGlobalSection
 EndGlobal

@@ -70,7 +70,7 @@ namespace FlowSynx.Plugins.Json {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The specified path must be not empty!.
+        ///   Looks up a localized string similar to Reflection-based access is not allowed..
         /// </summary>
         internal static string ReflectionBasedAccessIsNotAllowed {
             get {
