@@ -27,7 +27,7 @@ public class JsonPlugin : IPlugin
         Name = "Json",
         CompanyName = "FlowSynx",
         Description = Resources.PluginDescription,
-        Version = new PluginVersion(1, 0, 0),
+        Version = new Version(1, 0, 0),
         Category = PluginCategory.Data,
         Authors = new List<string> { "FlowSynx" },
         Copyright = "© FlowSynx. All rights reserved.",
@@ -35,7 +35,8 @@ public class JsonPlugin : IPlugin
         ReadMe = "README.md",
         RepositoryUrl = "https://github.com/flowsynx/plugin-json",
         ProjectUrl = "https://flowsynx.io",
-        Tags = new List<string>() { "flowSynx", "json", "data", "data-platform" }
+        Tags = new List<string>() { "flowSynx", "json", "data", "data-platform" },
+        MinimumFlowSynxVersion = new Version(1, 1, 1),
     };
 
     public PluginSpecifications? Specifications { get; set; }

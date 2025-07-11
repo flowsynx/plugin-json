@@ -2,7 +2,7 @@
 
 namespace FlowSynx.Plugins.Json.Models;
 
-internal class JsonPluginSpecifications: PluginSpecifications
+public class JsonPluginSpecifications: PluginSpecifications
 {
 
 }
