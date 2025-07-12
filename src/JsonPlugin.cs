@@ -27,7 +27,7 @@ public class JsonPlugin : IPlugin
         Name = "Json",
         CompanyName = "FlowSynx",
         Description = Resources.PluginDescription,
-        Version = new Version(1, 0, 0),
+        Version = new Version(1, 1, 0),
         Category = PluginCategory.Data,
         Authors = new List<string> { "FlowSynx" },
         Copyright = "© FlowSynx. All rights reserved.",
