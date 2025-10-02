@@ -20,17 +20,27 @@ internal class MapOperationHandler : IJsonOperationHandler
             throw new InvalidOperationException("Mappings not defined in specifications.");
 
         object mappedResult;
+        List<Dictionary<string, object>>? structuredData = null;
 
         if (json is JArray array)
         {
-            mappedResult = array
+            var mappedList = array
                 .OfType<JObject>()
                 .Select(obj => MapSingleObject(obj, inputParameter.Mappings))
+                .ToList();
+            mappedResult = mappedList;
+            structuredData = mappedList
+                .Select(obj => obj.ToDictionary(kvp => kvp.Key, kvp => (object)(kvp.Value?.GetType()?.Name ?? "null")))
                 .ToList();
         }
         else if (json is JObject obj)
         {
-            mappedResult = MapSingleObject(obj, inputParameter.Mappings);
+            var mappedObj = MapSingleObject(obj, inputParameter.Mappings);
+            mappedResult = mappedObj;
+            structuredData = new List<Dictionary<string, object>>
+            {
+                mappedObj.ToDictionary(kvp => kvp.Key, kvp => (object)(kvp.Value?.GetType()?.Name ?? "null"))
+            };
         }
         else
         {
@@ -42,7 +52,8 @@ internal class MapOperationHandler : IJsonOperationHandler
         return new PluginContext(filename, "Data")
         {
             Format = "Json",
-            Content = convertedJson
+            Content = convertedJson,
+            StructuredData = structuredData
         };
     }
 

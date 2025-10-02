@@ -23,12 +23,14 @@ internal class ExtractOperationHandler : IJsonOperationHandler
         var tokens = json.SelectTokens(path).ToList();
         string filename = $"{_guidProvider.NewGuid()}.json";
 
+        List<Dictionary<string, object>>? structuredData = null;
         if (tokens.Count == 0)
         {
             return new PluginContext(filename, "Data")
             {
                 Format = "Json",
-                Content = "null"
+                Content = "null",
+                StructuredData = null
             };
         }
 
@@ -36,10 +38,35 @@ internal class ExtractOperationHandler : IJsonOperationHandler
             ? tokens[0]
             : new JArray(tokens);
 
+        structuredData = GetStructuredData(result);
+
         return new PluginContext(filename, "Data")
         {
             Format = "Json",
-            Content = result.ToString(inputParameter.Indented ? Formatting.Indented : Formatting.None)
+            Content = result.ToString(inputParameter.Indented ? Formatting.Indented : Formatting.None),
+            StructuredData = structuredData
         };
+    }
+
+    private List<Dictionary<string, object>>? GetStructuredData(JToken token)
+    {
+        if (token is JArray arr && arr.Count > 0)
+        {
+            var list = new List<Dictionary<string, object>>();
+            foreach (var item in arr)
+            {
+                if (item is JObject obj)
+                    list.Add(obj.Properties().ToDictionary(p => p.Name, p => (object)p.Value.Type.ToString()));
+            }
+            return list.Count > 0 ? list : null;
+        }
+        if (token is JObject obj2)
+        {
+            return new List<Dictionary<string, object>>
+            {
+                obj2.Properties().ToDictionary(p => p.Name, p => (object)p.Value.Type.ToString())
+            };
+        }
+        return null;
     }
 }
