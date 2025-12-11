@@ -1,4 +1,4 @@
-## FlowSynx JSON Plugin
+# FlowSynx JSON Plugin
 
 The **FlowSynx JSON Plugin** is a built-in, plug-and-play integration for the FlowSynx automation engine. It enables parsing, transforming, extracting, and mapping structured or semi-structured JSON data within workflows with no custom coding required.
 
@@ -41,11 +41,10 @@ The plugin accepts the following parameters:
 - `Flatten` (bool): Optional. Used with `transform` to specify whether to flatten nested objects (`true`) or not (`false`).
 - `Indented` (bool): Optional. Determines whether the output JSON should be pretty-printed with indentation (`true`) or compact (`false`).
 
-### Example input
+### Map operation example input
 
 ```json
 {
-  "Operation": "map",
   "Data": { ... },
   "Path": "$.some.path",
   "Mappings": {
@@ -76,7 +75,6 @@ The plugin accepts the following parameters:
 **Input Parameters:**
 ```json
 {
-  "Operation": "extract",
   "Data": { ... },
   "Path": "$.meta.version"
 }
@@ -101,7 +99,6 @@ The plugin accepts the following parameters:
 **Input Parameters:**
 ```json
 {
-  "Operation": "extract",
   "Data": "[...]",
   "Path": "$[*].id"
 }
@@ -135,7 +132,6 @@ The plugin accepts the following parameters:
 **Input Parameters:**
 ```json
 {
-  "Operation": "transform",
   "Data": { ... },
   "Flatten": true,
   "Indented": true
@@ -169,13 +165,12 @@ The plugin accepts the following parameters:
 **Input Parameters:**
 ```json
 {
-  "Operation": "map",
   "Data": { ... },
   "Mappings": {
     "Name": "$.person.name",
     "Email": "$.person.contact.email"
   },
-  "Indented": true
+  "Indented": false
 }
 ```
 
@@ -192,7 +187,6 @@ The plugin accepts the following parameters:
 ## Example Use Case in FlowSynx
 
 1. Add the JSON plugin to your FlowSynx workflow.
-2. Set `Operation` to one of: `extract`, `transform`, or `map`.
 3. Provide the JSON input object in `Data`.
 4. Configure `Path`, `Mappings`, `Flatten`, and `Indented` depending on the operation.
 5. Use the plugin output downstream in your workflow.
