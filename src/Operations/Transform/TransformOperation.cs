@@ -1,36 +1,45 @@
 ﻿using FlowSynx.PluginCore;
-using FlowSynx.Plugins.Json.Models;
+using FlowSynx.Plugins.Json.Helpers;
+using FlowSynx.Plugins.Json.Services;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace FlowSynx.Plugins.Json.Services;
+namespace FlowSynx.Plugins.Json.Operations.Transform;
 
-internal class TransformOperationHandler : IJsonOperationHandler
+internal class TransformOperation : IPluginOperation<TransformParameters, PluginContext>
 {
-    private readonly IGuidProvider _guidProvider;
+    private readonly IGuidProvider _guidProvider = new GuidProvider();
 
-    public TransformOperationHandler(IGuidProvider guidProvider)
-    {
-        _guidProvider = guidProvider;
-    }
+    public string Name => "Transform";
+    public string Description => "Transforms the input data into a different format.";
 
-    public object Handle(JToken json, InputParameter inputParameter)
+    public async Task<PluginContext?> ExecuteAsync(TransformParameters parameters, CancellationToken cancellationToken)
     {
+        var helper = new ParseDataHelper(_guidProvider);
+
+        // Parse the input content string, not the PluginContext itself
+        var context = helper.ParseDataToContext(parameters.Data);
+        var jsonToken = JToken.Parse(context.Content);
+
         JToken result;
 
-        if (inputParameter.Flatten)
+        if (parameters.Flatten)
         {
-            if (json is not JObject obj)
+            if (jsonToken is not JObject obj)
                 throw new NotSupportedException("Flatten is only supported for JSON objects.");
 
             result = FlattenJson(obj);
         }
         else
         {
-            result = json;
+            result = jsonToken;
         }
 
-        var transformedResult = result.ToString(inputParameter.Indented ? Formatting.Indented : Formatting.None);
+        // Preserve original content formatting when not flattening; otherwise serialize according to Indented flag
+        var transformedResult = parameters.Flatten
+            ? result.ToString(parameters.Indented ? Formatting.Indented : Formatting.None)
+            : context.Content;
+
         string filename = $"{_guidProvider.NewGuid()}.json";
         var structuredData = GetStructuredData(result);
         return new PluginContext(filename, "Data")

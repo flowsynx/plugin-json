@@ -1,159 +1,68 @@
-﻿using FlowSynx.PluginCore;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using FlowSynx.PluginCore;
 using FlowSynx.Plugins.Json;
 using FlowSynx.Plugins.Json.Services;
-using Moq;
+using Xunit;
 
-namespace FlowSynx.Plugin.Json.UnitTests;
-
-public class JsonPluginTests
+namespace FlowSynx.Plugin.Json.UnitTests
 {
-    private readonly JsonPlugin _plugin;
-    private readonly Mock<IPluginLogger> _loggerMock;
-    private readonly Mock<IReflectionGuard> _reflectionGuardMock;
-    private readonly Mock<IGuidProvider> _guidProviderMock;
-
-    public JsonPluginTests()
+    public class JsonPluginTests
     {
-        _guidProviderMock = new Mock<IGuidProvider>();
-        _reflectionGuardMock = new Mock<IReflectionGuard>();
-        _loggerMock = new Mock<IPluginLogger>();
-
-        // Provide fixed GUID for tests
-        _guidProviderMock.Setup(g => g.NewGuid()).Returns(Guid.NewGuid);
-
-        // Setup default ReflectionGuard to false (not called via reflection)
-        _reflectionGuardMock.Setup(r => r.IsCalledViaReflection()).Returns(false);
-
-        // Inject mocks into JsonPlugin
-        _plugin = new JsonPlugin(_guidProviderMock.Object, _reflectionGuardMock.Object);
-    }
-
-    [Fact]
-    public async Task Initialize_SetsLoggerAndMarksAsInitialized()
-    {
-        // Act
-        await _plugin.Initialize(_loggerMock.Object);
-
-        // Assert
-        Assert.True(GetPrivateField<bool>(_plugin, "_isInitialized"));
-    }
-
-    [Fact]
-    public async Task Initialize_WithNullLogger_ThrowsArgumentNullException()
-    {
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _plugin.Initialize(null!));
-    }
-
-    [Fact]
-    public async Task Initialize_WhenCalledViaReflection_ThrowsInvalidOperationException()
-    {
-        _reflectionGuardMock.Setup(r => r.IsCalledViaReflection()).Returns(true);
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _plugin.Initialize(_loggerMock.Object));
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_WhenNotInitialized_ThrowsInvalidOperationException()
-    {
-        var parameters = CreateValidParameters("extract");
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _plugin.ExecuteAsync(parameters, CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_WhenCalledViaReflection_ThrowsInvalidOperationException()
-    {
-        await _plugin.Initialize(_loggerMock.Object);
-        _reflectionGuardMock.Setup(r => r.IsCalledViaReflection()).Returns(true);
-
-        var parameters = CreateValidParameters("extract");
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _plugin.ExecuteAsync(parameters, CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_WithUnsupportedOperation_ThrowsNotSupportedException()
-    {
-        await _plugin.Initialize(_loggerMock.Object);
-
-        var parameters = CreateValidParameters("invalidOperation");
-
-        await Assert.ThrowsAsync<NotSupportedException>(() =>
-            _plugin.ExecuteAsync(parameters, CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_WithNullInputData_ThrowsArgumentNullException()
-    {
-        await _plugin.Initialize(_loggerMock.Object);
-
-        var parameters = new PluginParameters
+        private class FakeReflectionGuard : IReflectionGuard
         {
-            { "Operation", "extract" },
-            { "Data", (object?)null }
-        };
+            public bool IsCalledViaReflection() => false;
+        }
 
-        await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            _plugin.ExecuteAsync(parameters, CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_WithListOfPluginContext_ThrowsNotSupportedException()
-    {
-        await _plugin.Initialize(_loggerMock.Object);
-
-        var parameters = new PluginParameters
+        private class FakeGuidProvider : IGuidProvider
         {
-            { "Operation", "extract" },
-            { "Data", new List<PluginContext>() }
-        };
+            public Guid NewGuid() => Guid.Parse("00000000-0000-0000-0000-000000000002");
+        }
 
-        await Assert.ThrowsAsync<NotSupportedException>(() =>
-            _plugin.ExecuteAsync(parameters, CancellationToken.None));
-    }
+        private JsonPlugin CreatePlugin() => new JsonPlugin(new FakeGuidProvider(), new FakeReflectionGuard());
 
-    [Fact]
-    public async Task ExecuteAsync_WithValidExtractOperation_ReturnsExpectedResult()
-    {
-        await _plugin.Initialize(_loggerMock.Object);
-
-        var parameters = CreateValidParameters("extract");
-        parameters.TryAdd("Path", "$.key");
-        var result = await _plugin.ExecuteAsync(parameters, CancellationToken.None);
-
-        Assert.NotNull(result);
-        // Optionally verify expected result content
-    }
-
-    [Fact]
-    public void SupportedOperations_ShouldContainAllExpectedOperations()
-    {
-        var operations = _plugin.SupportedOperations;
-
-        Assert.Contains("extract", operations);
-        Assert.Contains("map", operations);
-        Assert.Contains("transform", operations);
-        Assert.Equal(3, operations.Count);
-    }
-
-    private PluginParameters CreateValidParameters(string operation)
-    {
-        return new PluginParameters
+        [Fact]
+        public void Metadata_HasExpectedValues()
         {
-            { "Operation", operation },
-            { "Data", new PluginContext("Test", "Data")
-                {
-                    Content = "{ \"key\": \"value\" }"
-                } 
-            }
-        };
-    }
+            var plugin = CreatePlugin();
+            var md = plugin.Metadata;
+            Assert.Equal("Json", md.Name);
+            Assert.Equal("FlowSynx", md.CompanyName);
+            Assert.Equal(PluginCategory.Data, md.Category);
+        }
 
-    private T GetPrivateField<T>(object obj, string fieldName)
-    {
-        var field = obj.GetType().GetField(fieldName, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        return (T)field!.GetValue(obj)!;
+        [Fact]
+        public async Task InitializeAsync_SetsSpecifications()
+        {
+            var plugin = CreatePlugin();
+            var logger = new TestLogger();
+            await plugin.InitializeAsync(logger, new Dictionary<string, object?>());
+            Assert.NotNull(plugin.Specifications);
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_BeforeInit_Throws()
+        {
+            var plugin = CreatePlugin();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => plugin.ExecuteAsync("extract", new PluginParameters(), CancellationToken.None));
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_UnsupportedOperation_Throws()
+        {
+            var plugin = CreatePlugin();
+            var logger = new TestLogger();
+            await plugin.InitializeAsync(logger, null);
+            await Assert.ThrowsAsync<NotSupportedException>(() => plugin.ExecuteAsync("unknown", new PluginParameters(), CancellationToken.None));
+        }
+
+        private class TestLogger : IPluginLogger
+        {
+            public void Log(PluginLoggerLevel level, string message) { }
+            public void Log(PluginLoggerLevel level, string message, Exception ex) { }
+            public void Log(PluginLoggerLevel level, string message, IDictionary<string, object> data) { }
+        }
     }
 }

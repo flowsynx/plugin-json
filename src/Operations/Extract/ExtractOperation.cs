@@ -1,26 +1,31 @@
 ﻿using FlowSynx.PluginCore;
-using FlowSynx.Plugins.Json.Models;
+using FlowSynx.Plugins.Json.Helpers;
+using FlowSynx.Plugins.Json.Services;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace FlowSynx.Plugins.Json.Services;
+namespace FlowSynx.Plugins.Json.Operations.Extract;
 
-internal class ExtractOperationHandler : IJsonOperationHandler
+internal class ExtractOperation : IPluginOperation<ExtractParameters, PluginContext>
 {
-    private readonly IGuidProvider _guidProvider;
+    private readonly IGuidProvider _guidProvider = new GuidProvider();
 
-    public ExtractOperationHandler(IGuidProvider guidProvider)
-    {
-        _guidProvider = guidProvider;
-    }
+    public string Name => "Extract";
+    public string Description => "Extracts data from a JSON content.";
 
-    public object Handle(JToken json, InputParameter inputParameter)
+    public async Task<PluginContext?> ExecuteAsync(ExtractParameters parameters, CancellationToken cancellationToken)
     {
-        string? path = inputParameter.Path;
+        string? path = parameters.Path;
         if (string.IsNullOrWhiteSpace(path))
             throw new ArgumentException("Path parameter is required for extract.");
 
-        var tokens = json.SelectTokens(path).ToList();
+        var helper = new ParseDataHelper(_guidProvider);
+
+        var jsonCtx = helper.ParseDataToContext(parameters.Data);
+        if (string.IsNullOrWhiteSpace(jsonCtx.Content))
+            throw new ArgumentException("Input JSON content cannot be empty.");
+        var jsonToken = JToken.Parse(jsonCtx.Content);
+        var tokens = jsonToken.SelectTokens(path).ToList();
         string filename = $"{_guidProvider.NewGuid()}.json";
 
         List<Dictionary<string, object>>? structuredData = null;
@@ -43,7 +48,7 @@ internal class ExtractOperationHandler : IJsonOperationHandler
         return new PluginContext(filename, "Data")
         {
             Format = "Json",
-            Content = result.ToString(inputParameter.Indented ? Formatting.Indented : Formatting.None),
+            Content = result.ToString(parameters.Indented ? Formatting.Indented : Formatting.None),
             StructuredData = structuredData
         };
     }
@@ -57,6 +62,8 @@ internal class ExtractOperationHandler : IJsonOperationHandler
             {
                 if (item is JObject obj)
                     list.Add(obj.Properties().ToDictionary(p => p.Name, p => (object)p.Value.Type.ToString()));
+                else if (item is JValue jv)
+                    list.Add(new Dictionary<string, object> { { "$value", jv.Type.ToString() } });
             }
             return list.Count > 0 ? list : null;
         }
@@ -65,6 +72,13 @@ internal class ExtractOperationHandler : IJsonOperationHandler
             return new List<Dictionary<string, object>>
             {
                 obj2.Properties().ToDictionary(p => p.Name, p => (object)p.Value.Type.ToString())
+            };
+        }
+        if (token is JValue jv2)
+        {
+            return new List<Dictionary<string, object>>
+            {
+                new Dictionary<string, object> { { "$value", jv2.Type.ToString() } }
             };
         }
         return null;

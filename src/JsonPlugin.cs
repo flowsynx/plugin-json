@@ -1,8 +1,9 @@
 ﻿using FlowSynx.PluginCore;
 using FlowSynx.PluginCore.Extensions;
-using FlowSynx.Plugins.Json.Models;
+using FlowSynx.Plugins.Json.Operations.Extract;
+using FlowSynx.Plugins.Json.Operations.Map;
+using FlowSynx.Plugins.Json.Operations.Transform;
 using FlowSynx.Plugins.Json.Services;
-using Newtonsoft.Json.Linq;
 
 namespace FlowSynx.Plugins.Json;
 
@@ -10,6 +11,7 @@ public class JsonPlugin : IPlugin
 {
     private readonly IGuidProvider _guidProvider;
     private readonly IReflectionGuard _reflectionGuard;
+    private JsonPluginSpecifications? _specifications = null;
     private IPluginLogger? _logger;
     private bool _isInitialized;
 
@@ -27,7 +29,7 @@ public class JsonPlugin : IPlugin
         Name = "Json",
         CompanyName = "FlowSynx",
         Description = Resources.PluginDescription,
-        Version = new Version(1, 1, 1),
+        Version = new Version(1, 2, 0),
         Category = PluginCategory.Data,
         Authors = new List<string> { "FlowSynx" },
         Copyright = "© FlowSynx. All rights reserved.",
@@ -36,34 +38,40 @@ public class JsonPlugin : IPlugin
         RepositoryUrl = "https://github.com/flowsynx/plugin-json",
         ProjectUrl = "https://flowsynx.io",
         Tags = new List<string>() { "flowSynx", "json", "data", "data-platform" },
-        MinimumFlowSynxVersion = new Version(1, 1, 1),
+        MinimumFlowSynxVersion = new Version(1, 3, 0),
     };
 
-    public PluginSpecifications? Specifications { get; set; }
+    public IPluginSpecifications? Specifications => _specifications;
 
-    public Type SpecificationsType => typeof(JsonPluginSpecifications);
-
-    private Dictionary<string, IJsonOperationHandler> OperationMap => new(StringComparer.OrdinalIgnoreCase)
+    public IReadOnlyCollection<IPluginOperation> SupportedOperations { get; } = new IPluginOperation[]
     {
-        ["extract"] = new ExtractOperationHandler(_guidProvider),
-        ["map"] = new MapOperationHandler(_guidProvider),
-        ["transform"] = new TransformOperationHandler(_guidProvider)
+        new ExtractOperation(),
+        new MapOperation(),
+        new TransformOperation()
     };
 
-    public IReadOnlyCollection<string> SupportedOperations => OperationMap.Keys;
-
-    public Task Initialize(IPluginLogger logger)
+    public Task InitializeAsync(IPluginLogger logger, IDictionary<string, object?>? specifications)
     {
         if (_reflectionGuard.IsCalledViaReflection())
             throw new InvalidOperationException(Resources.ReflectionBasedAccessIsNotAllowed);
 
-        ArgumentNullException.ThrowIfNull(logger);
-        _logger = logger;
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+        var jsonSpecifications = new JsonPluginSpecifications();
+        if (specifications != null)
+            jsonSpecifications.FromDictionary(specifications);
+
+        jsonSpecifications.Validate();
+        _specifications = jsonSpecifications;
+
         _isInitialized = true;
         return Task.CompletedTask;
     }
 
-    public Task<object?> ExecuteAsync(PluginParameters parameters, CancellationToken cancellationToken)
+    public async Task<object?> ExecuteAsync(
+        string? operationName,
+        PluginParameters parameters,
+        CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -73,30 +81,22 @@ public class JsonPlugin : IPlugin
         if (!_isInitialized)
             throw new InvalidOperationException($"Plugin '{Metadata.Name}' v{Metadata.Version} is not initialized.");
 
-        var inputParameter = parameters.ToObject<InputParameter>();
-        if (!OperationMap.TryGetValue(inputParameter.Operation, out var handler))
+        var operation = SupportedOperations
+            .FirstOrDefault(op => string.Equals(op.Name, operationName, StringComparison.OrdinalIgnoreCase))
+            ?? throw new NotSupportedException($"Operation '{operationName}' is not supported.");
+
+        return operation.Name.ToLowerInvariant() switch
         {
-            throw new NotSupportedException($"Operation '{inputParameter.Operation}' is not supported.");
-        }
+            "extract" => await ((ExtractOperation)operation)
+                            .ExecuteAsync(parameters.ToObject<ExtractParameters>(), cancellationToken),
 
-        var context = ParseDataToContext(inputParameter.Data);
-        var json = context.Content ?? throw new ArgumentException("Input JSON is required.");
+            "map" => await ((MapOperation)operation)
+                            .ExecuteAsync(parameters.ToObject<MapParameters>(), cancellationToken),
 
-        var jsonToken = JToken.Parse(json);
-        return Task.FromResult(handler.Handle(jsonToken, inputParameter));
-    }
+            "transform" => await ((TransformOperation)operation)
+                            .ExecuteAsync(parameters.ToObject<TransformParameters>(), cancellationToken),
 
-    private PluginContext ParseDataToContext(object? data)
-    {
-        if (data is null)
-            throw new ArgumentNullException(nameof(data), "Input data cannot be null.");
-
-        return data switch
-        {
-            PluginContext singleContext => singleContext,
-            IEnumerable<PluginContext> => throw new NotSupportedException("List of PluginContext is not supported."),
-            string strData => new PluginContext(_guidProvider.NewGuid().ToString(), "Data") { Content = strData },
-            _ => throw new NotSupportedException("Unsupported input data format.")
+            _ => throw new InvalidOperationException($"Unsupported operation: {operation.Name}")
         };
     }
 }
